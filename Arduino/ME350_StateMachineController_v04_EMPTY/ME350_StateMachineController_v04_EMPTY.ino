@@ -68,7 +68,7 @@ const int LOWER_BOUND         = CHUTE_1_POSITION; // [encoder counts] Position o
 const int UPPER_BOUND         = PUT_POSITION;     // [encoder counts] Position of the right end stop
 const int TARGET_BAND         = 10;                // [encoder counts] "Close enough" range when moving towards a target.
 // Timing:
-const long  WAIT_TIME         = 1000; // [microseconds] Time waiting for the ball to drop.
+const long  WAIT_TIME         = 300000; // [microseconds] Time waiting for the ball to drop.
 // VARIABLES:
 int activeChutePosition;     // [encoder counts] position of the currently active chute
 unsigned long startWaitTime; // [microseconds] System clock value at the moment the WAIT_FOR_BALL state started
@@ -264,26 +264,37 @@ void loop() {
             // Set the target position to chute 1 or 2:
             targetPosition = activeChutePosition;
             if (activeChutePosition == CHUTE_1_POSITION){
-                KP = 0.015;
+                KP = 0.005;
                 KI = 0.005;
-                KD = 0.001;
+                KD = 0.0015;
+                if ( abs(motorPosition - targetPosition)< 20 && motorVelocity==0) {  // Update this
+                    // We reached the chute.  Ask the playing field to drop a ball by 
+                    // setting chuteActivateSignal to HIGH:
+                    digitalWrite(PIN_NR_DROP_REQ, HIGH);
+                    // Start waiting timer:
+                    startWaitTime = micros();
+                    // Transition into WAIT_FOR_BALL state
+                    Serial.println("State transition from MOVE_TO_CHUTE to WAIT_FOR_BALL");
+                    state = WAIT_FOR_BALL;
+                } 
             }
             else if (activeChutePosition == CHUTE_2_POSITION){
                 KP = 0.025;
                 KI = 0.005;
                 KD = 0.001;
+                if ( abs(motorPosition - targetPosition)< 5 && motorVelocity==0) {  // Update this
+                    // We reached the chute.  Ask the playing field to drop a ball by 
+                    // setting chuteActivateSignal to HIGH:
+                    digitalWrite(PIN_NR_DROP_REQ, HIGH);
+                    // Start waiting timer:
+                    startWaitTime = micros();
+                    // Transition into WAIT_FOR_BALL state
+                    Serial.println("State transition from MOVE_TO_CHUTE to WAIT_FOR_BALL");
+                    state = WAIT_FOR_BALL;
+                } 
             }
             // Decide what to do next:
-            if ( abs(motorPosition - targetPosition)< 5 && motorVelocity==0) {  // Update this
-                // We reached the chute.  Ask the playing field to drop a ball by 
-                // setting chuteActivateSignal to HIGH:
-                digitalWrite(PIN_NR_DROP_REQ, HIGH);
-                // Start waiting timer:
-                startWaitTime = micros();
-                // Transition into WAIT_FOR_BALL state
-                Serial.println("State transition from MOVE_TO_CHUTE to WAIT_FOR_BALL");
-                state = WAIT_FOR_BALL;
-            } 
+            
             // Otherwise we continue moving towards the chute
         break;
     
@@ -323,6 +334,9 @@ void loop() {
               }
               // Transition into PUT_BALL state
               Serial.println("State transition from WAIT_FOR_BALL to PUT_BALL");
+              if (micros() - startWaitTime > 3000000){
+                  state = CALIBRATE;
+              }
           } 
           // Otherwise we continue waiting for the ball
           break;
@@ -333,7 +347,7 @@ void loop() {
             // Set the target position to chute 1 or 2:
             targetPosition = PUT_POSITION;
             if (activeChutePosition == CHUTE_1_POSITION) {
-                KP = 0.015;
+                KP = 0.02;
                 KI = 0.00;
                 KD = 0.0035;
             }
@@ -355,24 +369,31 @@ void loop() {
         //****************************************************************************//
         // In this state 7, we move the cup to drop it in the net:
         case SHOOT_BALL:
-            targetPosition = PUT_POSITION;
             if (activeChutePosition == CHUTE_1_POSITION) {
+                targetPosition = PUT_POSITION;
                 KP = 0.027;
                 KI = 0.01;
                 KD = 0.003;
+                if (abs(motorPosition - targetPosition)< 40 && motorVelocity==0) {  // Update this
+                    // We reached the basket and dropped the ball.
+                    // Transition into WAIT state to restart the cycle
+                    Serial.println("State transition from PUT_BALL to WAIT");
+                    state = WAIT;
+                } 
             }
             else if (activeChutePosition == CHUTE_2_POSITION){
-                KP = 0.030;
+                targetPosition = 700;
+                KP = 0.4;
                 KI = 0.001;
                 KD = 0.0015;
+                if ( motorVelocity < -1000) {  // Update this
+                    // We reached the basket and dropped the ball.
+                    // Transition into WAIT state to restart the cycle
+                    Serial.println("State transition from PUT_BALL to WAIT");
+                    state = WAIT;
+                } 
             }
             // Decide what to do next:
-            if (abs(motorPosition - targetPosition)< 40 && motorVelocity==0) {  // Update this
-                // We reached the basket and dropped the ball.
-                // Transition into WAIT state to restart the cycle
-                Serial.println("State transition from PUT_BALL to WAIT");
-                state = WAIT;
-            } 
             // Otherwise we continue moving towards the chute
         break;
         //****************************************************************************//
