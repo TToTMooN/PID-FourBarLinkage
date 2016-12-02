@@ -263,9 +263,16 @@ void loop() {
         case MOVE_TO_CHUTE:
             // Set the target position to chute 1 or 2:
             targetPosition = activeChutePosition;
-            KP = 0.025;
-            KI = 0.005;
-            KD = 0.001;
+            if (activeChutePosition == CHUTE_1_POSITION){
+                KP = 0.015;
+                KI = 0.005;
+                KD = 0.001;
+            }
+            else if (activeChutePosition == CHUTE_2_POSITION){
+                KP = 0.025;
+                KI = 0.005;
+                KD = 0.001;
+            }
             // Decide what to do next:
             if ( abs(motorPosition - targetPosition)< 5 && motorVelocity==0) {  // Update this
                 // We reached the chute.  Ask the playing field to drop a ball by 
@@ -326,14 +333,14 @@ void loop() {
             // Set the target position to chute 1 or 2:
             targetPosition = PUT_POSITION;
             if (activeChutePosition == CHUTE_1_POSITION) {
-                KP = 0.005;
+                KP = 0.015;
                 KI = 0.00;
-                KD = 0.00;
+                KD = 0.0035;
             }
             else if (activeChutePosition == CHUTE_2_POSITION){
-                KP = 0.008;
-                KI = 0.0;
-                KD = 0.002;
+                KP = 0.03;
+                KI = 0.001;
+                KD = 0.004;
             }
             // Decide what to do next:
             if (abs(motorPosition - targetPosition)< 40 && motorVelocity==0) {  // Update this
@@ -350,14 +357,14 @@ void loop() {
         case SHOOT_BALL:
             targetPosition = PUT_POSITION;
             if (activeChutePosition == CHUTE_1_POSITION) {
-                KP = 0.025;
+                KP = 0.027;
                 KI = 0.01;
-                KD = 0.0015;
+                KD = 0.003;
             }
             else if (activeChutePosition == CHUTE_2_POSITION){
-                KP = 0.025;
-                KI = 0.01;
-                KD = 0.002;
+                KP = 0.030;
+                KI = 0.001;
+                KD = 0.0015;
             }
             // Decide what to do next:
             if (abs(motorPosition - targetPosition)< 40 && motorVelocity==0) {  // Update this
