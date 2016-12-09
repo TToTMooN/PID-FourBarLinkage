@@ -211,11 +211,9 @@ void loop() {
         break;
         
         case DONE_CALIBRATE:
-            // We don't have to do anything here since this state is only used to set
-            // a fixed output voltage.  This happens further below.
             
             // Decide what to do next:
-            if (micros() - startCalibrationTime < 150000) { 
+            if (micros() - startCalibrationTime > 3000000) { 
                 // We reached the endstop.  Update the motor position to the limit:
                 // (NOTE: If the limit switch is on the right, this must be UPPER_BOUND)
                 motorPosition = LOWER_BOUND;  
@@ -229,8 +227,7 @@ void loop() {
             // Otherwise we continue calibrating
         break;
         //****************************************************************************//
-        // In the WAIT state 3, we move the cup to a neutral position (close to the 
-        // chutes) while we wait for one of them to become active.
+        // In the WAIT state 3, we receive the signal from the arena, to know which chute is activated.
         case WAIT:
             // Set the target position to a neutral position near the chutes:
             //targetPosition = WAIT_POSITION;
@@ -279,10 +276,10 @@ void loop() {
                 } 
             }
             else if (activeChutePosition == CHUTE_2_POSITION){
-                KP = 0.025;
+                KP = 0.025;//Can make it smaller Revise
                 KI = 0.005;
                 KD = 0.001;
-                if ( abs(motorPosition - targetPosition)< 5 && motorVelocity==0) {  // Update this
+                if ( abs(motorPosition - targetPosition) < 5 && motorVelocity==0) {  // Update this
                     // We reached the chute.  Ask the playing field to drop a ball by 
                     // setting chuteActivateSignal to HIGH:
                     digitalWrite(PIN_NR_DROP_REQ, HIGH);
@@ -334,7 +331,7 @@ void loop() {
               }
               // Transition into PUT_BALL state
               Serial.println("State transition from WAIT_FOR_BALL to PUT_BALL");
-              if (micros() - startWaitTime > 3000000){
+              if (micros() - startWaitTime > 3000000){//revise
                   state = CALIBRATE;
               }
           } 
@@ -413,7 +410,7 @@ void loop() {
    
     //******************************************************************************//
     // Position Controller
-    if (digitalRead(PIN_NR_ON_OFF_SWITCH)==HIGH && (!(state == WAIT_FOR_BALL))) {
+    if (digitalRead(PIN_NR_ON_OFF_SWITCH)==HIGH && (!(state == WAIT_FOR_BALL)) && (!(state == DONE_CALIBRATE))) {
         // If the toggle switch is on, run the controller:
         //** PID control: **//  
         // Compute the position error [encoder counts]
@@ -480,21 +477,7 @@ void loop() {
             if (motorPosition > FF_BALANCED_POSITION) {
                 desiredVoltage = desiredVoltage + (motorPosition-FF_BALANCED_POSITION)/(UPPER_BOUND-FF_BALANCED_POSITION)*FF_VOLTAGE_UPPER_BOUND;
             }
-        
         }
-        //if (state == SHOOT_BALL) {
-        //    if ( micros() - startShootTime < 175000){
-        //        desiredVoltage = 12;
-        //    }
-        //    else if ( (micros() - startShootTime) > 175000 && (micros() - startShootTime) <250000 ) {
-        //        desiredVoltage = -12;
-        //    }
-        //    else{
-        //        desiredVoltage = 0;
-        //        state = WAIT;
-        //        //integralError = 0;
-        //    }
-        //}
     } 
     else { 
         // Otherwise, the toggle switch is off, so do not run the controller, 
